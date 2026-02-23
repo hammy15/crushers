@@ -94,3 +94,12 @@ body {
 .animate-pulse-ring {
   animation: pulse-ring 3s ease-in-out infinite;
 }
+
+/* Hide scrollbar but keep scroll */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
