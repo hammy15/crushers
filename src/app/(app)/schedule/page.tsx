@@ -22,11 +22,11 @@ type ModalAction =
   | { type: "book"; bay: 1 | 2 | 3; date: string; hour: number }
   | { type: "cancel"; booking: BayBooking };
 
-// Bay theme colors
+// Bay theme colors — higher contrast
 const BAY_THEME = {
-  1: { bg: "bg-blue-500", bgLight: "bg-blue-50", border: "border-blue-200", text: "text-blue-700", dot: "bg-blue-500", ring: "ring-blue-200" },
-  2: { bg: "bg-violet-500", bgLight: "bg-violet-50", border: "border-violet-200", text: "text-violet-700", dot: "bg-violet-500", ring: "ring-violet-200" },
-  3: { bg: "bg-teal-500", bgLight: "bg-teal-50", border: "border-teal-200", text: "text-teal-700", dot: "bg-teal-500", ring: "ring-teal-200" },
+  1: { bg: "bg-blue-600", bgLight: "bg-blue-100", bgCell: "bg-blue-100/80", border: "border-blue-300", text: "text-blue-800", dot: "bg-blue-600", label: "Blue" },
+  2: { bg: "bg-violet-600", bgLight: "bg-violet-100", bgCell: "bg-violet-100/80", border: "border-violet-300", text: "text-violet-800", dot: "bg-violet-600", label: "Purple" },
+  3: { bg: "bg-teal-600", bgLight: "bg-teal-100", bgCell: "bg-teal-100/80", border: "border-teal-300", text: "text-teal-800", dot: "bg-teal-600", label: "Teal" },
 } as const;
 
 export default function SchedulePage() {
@@ -39,19 +39,16 @@ export default function SchedulePage() {
   const dateStr = format(selectedDate, "yyyy-MM-dd");
   const dayOfWeek = getDay(selectedDate);
 
-  // Generate the week strip centered on today
   const weekDays = useMemo(() => {
     const today = new Date();
     return Array.from({ length: 14 }, (_, i) => addDays(today, i - 3));
   }, []);
 
-  // Bookings for selected day
   const dayBookings = useMemo(
     () => bookings.filter((b) => b.date === dateStr),
     [bookings, dateStr],
   );
 
-  // Bay availability counts for selected day (facility hours only)
   const bayAvailability = useMemo(() => {
     return ([1, 2, 3] as const).map((bay) => {
       const facilityHours = HOURS.filter((h) => isWithinFacilityHours(dayOfWeek, h));
@@ -60,7 +57,6 @@ export default function SchedulePage() {
     });
   }, [dayBookings, dayOfWeek]);
 
-  // My upcoming bookings
   const myUpcoming = useMemo(
     () =>
       bookings
@@ -69,14 +65,11 @@ export default function SchedulePage() {
     [bookings, currentUser.id],
   );
 
-  // Auto-scroll to current hour
   useEffect(() => {
     const hour = new Date().getHours();
     const el = document.getElementById(`row-${hour}`);
     if (el && scrollRef.current) {
-      setTimeout(() => {
-        el.scrollIntoView({ behavior: "smooth", block: "center" });
-      }, 400);
+      setTimeout(() => el.scrollIntoView({ behavior: "smooth", block: "center" }), 400);
     }
   }, []);
 
@@ -94,9 +87,7 @@ export default function SchedulePage() {
   function handleSlotClick(bay: 1 | 2 | 3, hour: number) {
     const existing = getBooking(bay, hour);
     if (existing) {
-      if (existing.userId === currentUser.id) {
-        setModal({ type: "cancel", booking: existing });
-      }
+      if (existing.userId === currentUser.id) setModal({ type: "cancel", booking: existing });
       return;
     }
     setModal({ type: "book", bay, date: dateStr, hour });
@@ -113,14 +104,13 @@ export default function SchedulePage() {
     setModal(null);
   }
 
-  // Current time position (percentage through the day for the "now" line)
   const now = new Date();
   const nowMinutes = now.getHours() * 60 + now.getMinutes();
   const nowPercent = (nowMinutes / (24 * 60)) * 100;
 
   return (
     <div>
-      {/* Header Row */}
+      {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
@@ -131,14 +121,14 @@ export default function SchedulePage() {
           <p className="text-sm text-muted mt-0.5">3 bays · 24/7 booking · $45/hr</p>
         </div>
         {myUpcoming.length > 0 && (
-          <div className="hidden sm:flex items-center gap-2 bg-accent/5 border border-accent/10 rounded-xl px-3 py-2">
+          <div className="hidden sm:flex items-center gap-2 bg-accent/10 border border-accent/20 rounded-xl px-3 py-2">
             <Zap className="w-3.5 h-3.5 text-accent" />
-            <span className="text-xs font-semibold text-accent">{myUpcoming.length} upcoming</span>
+            <span className="text-xs font-bold text-accent">{myUpcoming.length} upcoming</span>
           </div>
         )}
       </motion.div>
 
-      {/* Date Strip — scrollable week pills */}
+      {/* Date Strip */}
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
@@ -147,9 +137,9 @@ export default function SchedulePage() {
       >
         <button
           onClick={() => setSelectedDate((d) => subDays(d, 1))}
-          className="w-8 h-8 rounded-lg bg-white border border-border flex items-center justify-center hover:bg-slate-50 transition-colors shrink-0"
+          className="w-8 h-8 rounded-lg bg-white border border-border flex items-center justify-center hover:bg-slate-100 transition-colors shrink-0"
         >
-          <ChevronLeft className="w-4 h-4" />
+          <ChevronLeft className="w-4 h-4 text-foreground" />
         </button>
 
         <div className="flex-1 overflow-x-auto no-scrollbar">
@@ -164,36 +154,34 @@ export default function SchedulePage() {
                   key={day.toISOString()}
                   onClick={() => setSelectedDate(day)}
                   className={cn(
-                    "flex flex-col items-center px-3 py-2 rounded-xl transition-all min-w-[52px] relative",
+                    "flex flex-col items-center px-3 py-2 rounded-xl transition-all min-w-[52px]",
                     isSelected
-                      ? "bg-gradient-to-b from-accent to-orange-500 text-white shadow-lg shadow-accent/20"
+                      ? "bg-gradient-to-b from-accent to-orange-500 text-white shadow-lg shadow-accent/25"
                       : isTodayDate
-                        ? "bg-accent/5 border border-accent/15 text-foreground hover:bg-accent/10"
+                        ? "bg-accent/10 border-2 border-accent/30 text-foreground"
                         : "bg-white border border-border text-foreground hover:bg-slate-50",
                   )}
                 >
                   <span className={cn(
                     "text-[10px] font-bold uppercase tracking-wider",
-                    isSelected ? "text-white/70" : "text-muted",
+                    isSelected ? "text-white/80" : "text-slate-500",
                   )}>
                     {format(day, "EEE")}
                   </span>
                   <span className={cn(
                     "text-lg font-black leading-tight",
-                    isSelected ? "text-white" : "",
+                    isSelected ? "text-white" : "text-foreground",
                   )}>
                     {format(day, "d")}
                   </span>
                   {dayBookingCount > 0 && (
-                    <div className={cn(
-                      "flex gap-0.5 mt-0.5",
-                    )}>
+                    <div className="flex gap-0.5 mt-0.5">
                       {Array.from({ length: Math.min(dayBookingCount, 3) }).map((_, i) => (
                         <div
                           key={i}
                           className={cn(
-                            "w-1 h-1 rounded-full",
-                            isSelected ? "bg-white/60" : "bg-accent/40",
+                            "w-1.5 h-1.5 rounded-full",
+                            isSelected ? "bg-white/70" : "bg-accent",
                           )}
                         />
                       ))}
@@ -207,9 +195,9 @@ export default function SchedulePage() {
 
         <button
           onClick={() => setSelectedDate((d) => addDays(d, 1))}
-          className="w-8 h-8 rounded-lg bg-white border border-border flex items-center justify-center hover:bg-slate-50 transition-colors shrink-0"
+          className="w-8 h-8 rounded-lg bg-white border border-border flex items-center justify-center hover:bg-slate-100 transition-colors shrink-0"
         >
-          <ChevronRight className="w-4 h-4" />
+          <ChevronRight className="w-4 h-4 text-foreground" />
         </button>
       </motion.div>
 
@@ -226,23 +214,19 @@ export default function SchedulePage() {
           return (
             <div
               key={bay}
-              className={cn(
-                "rounded-xl border p-3 relative overflow-hidden",
-                theme.border, theme.bgLight,
-              )}
+              className={cn("rounded-xl border-2 p-3 relative overflow-hidden", theme.border, theme.bgLight)}
             >
-              {/* Fill bar */}
               <div
-                className={cn("absolute bottom-0 left-0 h-1 rounded-full opacity-40", theme.bg)}
+                className={cn("absolute bottom-0 left-0 h-1.5 opacity-50", theme.bg)}
                 style={{ width: `${pct}%` }}
               />
-              <div className="flex items-center gap-2 mb-1.5">
-                <div className={cn("w-2.5 h-2.5 rounded-full", theme.dot)} />
-                <span className="text-xs font-bold">Bay {bay}</span>
+              <div className="flex items-center gap-2 mb-1">
+                <div className={cn("w-3 h-3 rounded-full shadow-sm", theme.dot)} />
+                <span className="text-xs font-extrabold text-foreground">Bay {bay}</span>
               </div>
               <div className="flex items-baseline gap-1">
-                <span className={cn("text-xl font-black", theme.text)}>{open}</span>
-                <span className="text-[10px] text-muted">/{total} open</span>
+                <span className={cn("text-2xl font-black", theme.text)}>{open}</span>
+                <span className="text-[11px] font-medium text-slate-500">/{total} open</span>
               </div>
             </div>
           );
@@ -254,18 +238,18 @@ export default function SchedulePage() {
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.15 }}
-        className="mt-4 bg-white rounded-2xl border border-border overflow-hidden"
+        className="mt-4 bg-white rounded-2xl border-2 border-slate-200 overflow-hidden shadow-sm"
       >
         {/* Column Headers */}
-        <div className="grid grid-cols-[44px_1fr_1fr_1fr] border-b border-border">
-          <div className="p-2" />
+        <div className="grid grid-cols-[48px_1fr_1fr_1fr] border-b-2 border-slate-200 bg-slate-100">
+          <div className="p-2.5" />
           {([1, 2, 3] as const).map((bay) => {
             const theme = BAY_THEME[bay];
             return (
-              <div key={bay} className="p-2 text-center border-l border-border">
+              <div key={bay} className="p-2.5 text-center border-l-2 border-slate-200">
                 <div className="flex items-center justify-center gap-1.5">
-                  <div className={cn("w-2 h-2 rounded-full", theme.dot)} />
-                  <span className="text-[11px] font-bold">Bay {bay}</span>
+                  <div className={cn("w-2.5 h-2.5 rounded-full shadow-sm", theme.dot)} />
+                  <span className="text-xs font-extrabold text-foreground tracking-wide">BAY {bay}</span>
                 </div>
               </div>
             );
@@ -273,7 +257,7 @@ export default function SchedulePage() {
         </div>
 
         {/* Time Rows */}
-        <div className="max-h-[520px] overflow-y-auto relative" ref={scrollRef}>
+        <div className="max-h-[540px] overflow-y-auto relative" ref={scrollRef}>
           {/* Now indicator */}
           {isToday(selectedDate) && (
             <div
@@ -281,8 +265,8 @@ export default function SchedulePage() {
               style={{ top: `${nowPercent}%` }}
             >
               <div className="flex items-center">
-                <div className="w-2 h-2 rounded-full bg-red-500 -ml-1 shadow-sm" />
-                <div className="flex-1 h-[2px] bg-red-500/60" />
+                <div className="w-2.5 h-2.5 rounded-full bg-red-500 -ml-0.5 shadow-md ring-2 ring-red-200" />
+                <div className="flex-1 h-[2px] bg-red-500" />
               </div>
             </div>
           )}
@@ -296,17 +280,25 @@ export default function SchedulePage() {
                 key={hour}
                 id={`row-${hour}`}
                 className={cn(
-                  "grid grid-cols-[44px_1fr_1fr_1fr] border-b border-border/20",
-                  !isFacility && "bg-slate-50/40",
-                  isNowHour && "bg-red-50/30",
+                  "grid grid-cols-[48px_1fr_1fr_1fr]",
+                  hour < 23 && "border-b border-slate-200/60",
+                  !isFacility && "bg-slate-50/70",
+                  isNowHour && "bg-red-50/50",
                 )}
               >
                 {/* Time label */}
-                <div className="flex items-center justify-end pr-1.5 py-0">
+                <div className={cn(
+                  "flex items-center justify-end pr-2 py-0",
+                  isNowHour && "bg-red-50/80",
+                )}>
                   <span
                     className={cn(
-                      "text-[10px] font-medium tabular-nums leading-none",
-                      isNowHour ? "text-red-500 font-bold" : isFacility ? "text-muted" : "text-muted/40",
+                      "text-[10px] tabular-nums leading-none",
+                      isNowHour
+                        ? "text-red-600 font-extrabold"
+                        : isFacility
+                          ? "text-slate-500 font-semibold"
+                          : "text-slate-300 font-medium",
                     )}
                   >
                     {formatHour(hour)}
@@ -329,39 +321,42 @@ export default function SchedulePage() {
                       onClick={() => handleSlotClick(bay, hour)}
                       disabled={!!booking && !isYours}
                       className={cn(
-                        "border-l border-border/20 h-8 px-1.5 flex items-center transition-all text-[11px] relative group",
+                        "border-l border-slate-200/60 h-9 px-1.5 flex items-center transition-all text-[11px] relative group",
                         booking
                           ? isYours
-                            ? "bg-gradient-to-r from-accent/15 to-orange-100/50 cursor-pointer hover:from-accent/20"
-                            : cn(theme.bgLight, "cursor-default")
+                            ? "bg-gradient-to-r from-accent/20 to-orange-200/60 cursor-pointer hover:from-accent/30 border-l-accent/30"
+                            : cn(theme.bgCell, "cursor-default")
                           : isFacility
-                            ? "hover:bg-emerald-50/60 cursor-pointer"
-                            : "hover:bg-slate-100/40 cursor-pointer",
+                            ? "hover:bg-emerald-100/70 cursor-pointer"
+                            : "hover:bg-slate-100/60 cursor-pointer",
                       )}
                     >
                       {booking ? (
                         <div className="flex items-center gap-1.5 w-full min-w-0">
                           {isYours ? (
                             <>
-                              <div className="w-4 h-4 rounded-full bg-gradient-to-br from-accent to-orange-400 flex items-center justify-center shrink-0">
-                                <span className="text-[8px] font-bold text-white">Y</span>
+                              <div className="w-5 h-5 rounded-md bg-gradient-to-br from-accent to-orange-500 flex items-center justify-center shrink-0 shadow-sm">
+                                <span className="text-[9px] font-black text-white">You</span>
                               </div>
-                              <span className="truncate font-semibold text-accent">You</span>
-                              <X className="w-3 h-3 text-accent/40 shrink-0 ml-auto" />
+                              <span className="truncate font-bold text-accent text-xs">Booked</span>
+                              <X className="w-3.5 h-3.5 text-accent/50 shrink-0 ml-auto group-hover:text-accent" />
                             </>
                           ) : (
                             <>
-                              <div className={cn("w-4 h-4 rounded-full flex items-center justify-center shrink-0", theme.bg)}>
-                                <User className="w-2.5 h-2.5 text-white" />
+                              <div className={cn("w-5 h-5 rounded-md flex items-center justify-center shrink-0 shadow-sm", theme.bg)}>
+                                <User className="w-3 h-3 text-white" />
                               </div>
-                              <span className={cn("truncate font-medium", theme.text)}>
+                              <span className={cn("truncate font-bold text-xs", theme.text)}>
                                 {booking.userName.split(" ")[0]}
                               </span>
                             </>
                           )}
                         </div>
                       ) : (
-                        <span className="text-[10px] text-transparent group-hover:text-emerald-500 transition-colors font-medium">
+                        <span className={cn(
+                          "text-[10px] opacity-0 group-hover:opacity-100 transition-opacity font-bold",
+                          isFacility ? "text-emerald-600" : "text-slate-400",
+                        )}>
                           + Book
                         </span>
                       )}
@@ -374,7 +369,7 @@ export default function SchedulePage() {
         </div>
       </motion.div>
 
-      {/* Your Upcoming Bookings — compact inline */}
+      {/* Your Upcoming Bookings */}
       {myUpcoming.length > 0 && (
         <motion.div
           initial={{ opacity: 0, y: 16 }}
@@ -382,7 +377,7 @@ export default function SchedulePage() {
           transition={{ delay: 0.2 }}
           className="mt-4"
         >
-          <p className="text-[11px] font-bold text-muted uppercase tracking-wider mb-2">Your Bookings</p>
+          <p className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider mb-2">Your Bookings</p>
           <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
             {myUpcoming.map((b) => {
               const theme = BAY_THEME[b.bayNumber];
@@ -390,24 +385,24 @@ export default function SchedulePage() {
                 <div
                   key={b.id}
                   className={cn(
-                    "shrink-0 flex items-center gap-3 rounded-xl px-3.5 py-2.5 border",
+                    "shrink-0 flex items-center gap-3 rounded-xl px-3.5 py-2.5 border-2",
                     theme.bgLight, theme.border,
                   )}
                 >
                   <div>
                     <div className="flex items-center gap-1.5">
-                      <div className={cn("w-2 h-2 rounded-full", theme.dot)} />
-                      <span className="text-xs font-bold">Bay {b.bayNumber}</span>
+                      <div className={cn("w-2.5 h-2.5 rounded-full shadow-sm", theme.dot)} />
+                      <span className="text-xs font-extrabold text-foreground">Bay {b.bayNumber}</span>
                     </div>
-                    <p className="text-[11px] text-muted mt-0.5">
+                    <p className="text-[11px] font-medium text-slate-500 mt-0.5">
                       {format(new Date(b.date + "T00:00:00"), "EEE M/d")} · {formatHour(b.hour)}
                     </p>
                   </div>
                   <button
                     onClick={() => setModal({ type: "cancel", booking: b })}
-                    className="w-6 h-6 rounded-lg bg-white border border-border flex items-center justify-center hover:bg-red-50 hover:border-red-200 transition-colors"
+                    className="w-6 h-6 rounded-lg bg-white border-2 border-slate-200 flex items-center justify-center hover:bg-red-50 hover:border-red-300 transition-colors"
                   >
-                    <X className="w-3 h-3 text-muted hover:text-red-500" />
+                    <X className="w-3 h-3 text-slate-400 hover:text-red-500" />
                   </button>
                 </div>
               );
@@ -416,27 +411,27 @@ export default function SchedulePage() {
         </motion.div>
       )}
 
-      {/* Legend — minimal inline */}
-      <div className="mt-4 flex items-center gap-4 text-[10px] text-muted pb-2">
-        <div className="flex items-center gap-1">
-          <div className="w-2 h-2 rounded-sm bg-emerald-100 border border-emerald-200" />
+      {/* Legend */}
+      <div className="mt-4 flex items-center gap-5 text-[10px] font-semibold text-slate-500 pb-2">
+        <div className="flex items-center gap-1.5">
+          <div className="w-2.5 h-2.5 rounded bg-white border-2 border-slate-200" />
           Open
         </div>
-        <div className="flex items-center gap-1">
-          <div className="w-2 h-2 rounded-sm bg-accent/15 border border-accent/20" />
+        <div className="flex items-center gap-1.5">
+          <div className="w-2.5 h-2.5 rounded bg-accent/25 border-2 border-accent/30" />
           Yours
         </div>
-        <div className="flex items-center gap-1">
-          <div className="w-2 h-2 rounded-sm bg-blue-50 border border-blue-200" />
+        <div className="flex items-center gap-1.5">
+          <div className="w-2.5 h-2.5 rounded bg-blue-100 border-2 border-blue-300" />
           Booked
         </div>
-        <div className="flex items-center gap-1">
-          <div className="w-2 h-2 rounded-sm bg-slate-50 border border-border/40" />
+        <div className="flex items-center gap-1.5">
+          <div className="w-2.5 h-2.5 rounded bg-slate-100 border-2 border-slate-200" />
           Off-hours
         </div>
         {isToday(selectedDate) && (
-          <div className="flex items-center gap-1">
-            <div className="w-2 h-[2px] bg-red-500 rounded-full" />
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-[3px] bg-red-500 rounded-full" />
             Now
           </div>
         )}
@@ -449,7 +444,7 @@ export default function SchedulePage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/25 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center p-4"
             onClick={() => setModal(null)}
           >
             <motion.div
@@ -457,42 +452,41 @@ export default function SchedulePage() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 12 }}
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="bg-white rounded-2xl shadow-2xl shadow-black/15 w-full max-w-xs overflow-hidden"
+              className="bg-white rounded-2xl shadow-2xl shadow-black/20 w-full max-w-xs overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >
               {modal.type === "book" ? (
                 <>
-                  {/* Gradient header */}
-                  <div className={cn("p-4", BAY_THEME[modal.bay].bgLight)}>
-                    <div className="flex items-center gap-2">
-                      <div className={cn("w-8 h-8 rounded-xl flex items-center justify-center", BAY_THEME[modal.bay].bg)}>
-                        <span className="text-sm font-black text-white">{modal.bay}</span>
+                  <div className={cn("p-4 border-b-2", BAY_THEME[modal.bay].border, BAY_THEME[modal.bay].bgLight)}>
+                    <div className="flex items-center gap-3">
+                      <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shadow-md", BAY_THEME[modal.bay].bg)}>
+                        <span className="text-base font-black text-white">{modal.bay}</span>
                       </div>
                       <div>
-                        <p className="text-sm font-bold">Bay {modal.bay}</p>
-                        <p className="text-[11px] text-muted">{format(new Date(modal.date + "T00:00:00"), "EEEE, MMM d")}</p>
+                        <p className="text-base font-extrabold text-foreground">Bay {modal.bay}</p>
+                        <p className="text-xs font-medium text-slate-500">{format(new Date(modal.date + "T00:00:00"), "EEEE, MMM d")}</p>
                       </div>
                     </div>
                   </div>
                   <div className="p-4">
-                    <div className="flex items-center justify-between py-2 border-b border-border/30">
-                      <span className="text-xs text-muted flex items-center gap-1.5"><Clock className="w-3 h-3" /> Time</span>
-                      <span className="text-sm font-bold">{formatHour(modal.hour)} — {formatHour(modal.hour + 1)}</span>
+                    <div className="flex items-center justify-between py-2.5 border-b border-slate-200">
+                      <span className="text-xs font-semibold text-slate-500 flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> Time</span>
+                      <span className="text-sm font-extrabold text-foreground">{formatHour(modal.hour)} — {formatHour(modal.hour + 1)}</span>
                     </div>
-                    <div className="flex items-center justify-between py-2">
-                      <span className="text-xs text-muted">Rate</span>
-                      <span className="text-sm font-bold">$45</span>
+                    <div className="flex items-center justify-between py-2.5">
+                      <span className="text-xs font-semibold text-slate-500">Rate</span>
+                      <span className="text-sm font-extrabold text-foreground">$45</span>
                     </div>
                     <div className="flex gap-2 mt-3">
                       <button
                         onClick={() => setModal(null)}
-                        className="flex-1 text-xs font-semibold text-muted bg-slate-100 py-2.5 rounded-xl hover:bg-slate-200 transition-colors"
+                        className="flex-1 text-xs font-bold text-slate-600 bg-slate-100 py-2.5 rounded-xl hover:bg-slate-200 transition-colors border border-slate-200"
                       >
                         Cancel
                       </button>
                       <button
                         onClick={confirmAction}
-                        className="flex-1 text-xs font-semibold text-white bg-gradient-to-r from-accent to-orange-500 py-2.5 rounded-xl hover:shadow-lg hover:shadow-accent/25 transition-all"
+                        className="flex-1 text-xs font-bold text-white bg-gradient-to-r from-accent to-orange-500 py-2.5 rounded-xl hover:shadow-lg hover:shadow-accent/25 transition-all"
                       >
                         Book Now
                       </button>
@@ -501,31 +495,31 @@ export default function SchedulePage() {
                 </>
               ) : (
                 <>
-                  <div className="p-4 bg-red-50">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-xl bg-red-500 flex items-center justify-center">
-                        <X className="w-4 h-4 text-white" />
+                  <div className="p-4 bg-red-100 border-b-2 border-red-200">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-red-500 flex items-center justify-center shadow-md">
+                        <X className="w-5 h-5 text-white" />
                       </div>
                       <div>
-                        <p className="text-sm font-bold">Cancel Booking</p>
-                        <p className="text-[11px] text-muted">Bay {modal.booking.bayNumber} · {format(new Date(modal.booking.date + "T00:00:00"), "EEE, MMM d")}</p>
+                        <p className="text-base font-extrabold text-foreground">Cancel Booking</p>
+                        <p className="text-xs font-medium text-slate-500">Bay {modal.booking.bayNumber} · {format(new Date(modal.booking.date + "T00:00:00"), "EEE, MMM d")}</p>
                       </div>
                     </div>
                   </div>
                   <div className="p-4">
-                    <p className="text-xs text-muted mb-3">
+                    <p className="text-xs font-medium text-slate-500 mb-3">
                       Cancel your {formatHour(modal.booking.hour)} slot?
                     </p>
                     <div className="flex gap-2">
                       <button
                         onClick={() => setModal(null)}
-                        className="flex-1 text-xs font-semibold text-muted bg-slate-100 py-2.5 rounded-xl hover:bg-slate-200 transition-colors"
+                        className="flex-1 text-xs font-bold text-slate-600 bg-slate-100 py-2.5 rounded-xl hover:bg-slate-200 transition-colors border border-slate-200"
                       >
                         Keep
                       </button>
                       <button
                         onClick={confirmAction}
-                        className="flex-1 text-xs font-semibold text-white bg-red-500 py-2.5 rounded-xl hover:bg-red-600 transition-all"
+                        className="flex-1 text-xs font-bold text-white bg-red-500 py-2.5 rounded-xl hover:bg-red-600 transition-all"
                       >
                         Cancel Slot
                       </button>
