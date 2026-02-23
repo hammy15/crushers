@@ -51,8 +51,22 @@ const weaknessesList = [
   "Hitting greens in regulation","Fairway finding","Wedge distance gaps","Mental composure",
 ];
 
+// Seeded PRNG (mulberry32) — ensures identical output on server and client
+let _seed = 42;
+function seededRandom(): number {
+  _seed |= 0;
+  _seed = (_seed + 0x6d2b79f5) | 0;
+  let t = Math.imul(_seed ^ (_seed >>> 15), 1 | _seed);
+  t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+}
+
+function resetSeed(s: number = 42) {
+  _seed = s;
+}
+
 function rand(min: number, max: number): number {
-  return Math.random() * (max - min) + min;
+  return seededRandom() * (max - min) + min;
 }
 
 function randInt(min: number, max: number): number {
@@ -60,16 +74,16 @@ function randInt(min: number, max: number): number {
 }
 
 function pick<T>(arr: T[]): T {
-  return arr[Math.floor(Math.random() * arr.length)];
+  return arr[Math.floor(seededRandom() * arr.length)];
 }
 
 function pickN<T>(arr: T[], n: number): T[] {
-  const shuffled = [...arr].sort(() => Math.random() - 0.5);
+  const shuffled = [...arr].sort(() => seededRandom() - 0.5);
   return shuffled.slice(0, n);
 }
 
 function generateId(): string {
-  return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+  return seededRandom().toString(36).substring(2, 15) + seededRandom().toString(36).substring(2, 15);
 }
 
 // Generate users with correlated stats
@@ -321,6 +335,7 @@ export function generateImprovementPlan(user: UserProfile): ImprovementPlan {
 
 // Generate the full demo dataset
 export function generateDemoData() {
+  resetSeed(42); // Always start from the same seed
   const users = generateUsers(50);
 
   // Make first user the "demo" user
