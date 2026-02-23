@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowRight,
   BarChart3,
@@ -18,6 +18,7 @@ import {
   Upload,
   QrCode,
   Smartphone,
+  Download,
 } from "lucide-react";
 
 const fadeUp = {
@@ -29,11 +30,127 @@ const stagger = {
   visible: { transition: { staggerChildren: 0.12 } },
 };
 
+function AppInstallBanner() {
+  const [show, setShow] = useState(false);
+  const [platform, setPlatform] = useState<"ios" | "android" | null>(null);
+
+  useEffect(() => {
+    const dismissed = localStorage.getItem("crushers-app-dismissed");
+    if (dismissed) return;
+
+    const ua = navigator.userAgent.toLowerCase();
+    if (/iphone|ipad|ipod/.test(ua)) {
+      setPlatform("ios");
+      setShow(true);
+    } else if (/android/.test(ua)) {
+      setPlatform("android");
+      setShow(true);
+    } else {
+      // Show on desktop too — let everyone know about the app
+      setShow(true);
+    }
+  }, []);
+
+  const dismiss = () => {
+    setShow(false);
+    localStorage.setItem("crushers-app-dismissed", "1");
+  };
+
+  const storeUrl = platform === "ios"
+    ? "https://apps.apple.com/app/crushers-golf/id0000000000"
+    : platform === "android"
+      ? "https://play.google.com/store/apps/details?id=golf.crushers.app"
+      : null;
+
+  return (
+    <AnimatePresence>
+      {show && (
+        <motion.div
+          initial={{ y: 100, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: 100, opacity: 0 }}
+          transition={{ type: "spring", damping: 25, stiffness: 300, delay: 1.5 }}
+          className="fixed bottom-6 left-4 right-4 md:left-auto md:right-6 md:max-w-sm z-[60]"
+        >
+          <div className="bg-white rounded-2xl border border-border shadow-2xl shadow-black/10 p-4 relative overflow-hidden">
+            {/* Gradient accent strip */}
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-accent to-orange-400" />
+
+            <button
+              onClick={dismiss}
+              className="absolute top-3 right-3 p-1 rounded-full hover:bg-slate-100 transition-colors"
+            >
+              <X className="w-4 h-4 text-muted" />
+            </button>
+
+            <div className="flex items-start gap-3.5">
+              {/* App icon */}
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-accent to-orange-400 flex items-center justify-center shrink-0 shadow-lg shadow-accent/20">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="8" r="5" stroke="white" strokeWidth="2.5" fill="none" />
+                  <path d="M12 13 L8 22 L12 19 L16 22 L12 13Z" fill="white" />
+                </svg>
+              </div>
+
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-foreground">Get the Crushers App</p>
+                <p className="text-xs text-muted mt-0.5 leading-relaxed">
+                  {platform === "ios" || platform === "android"
+                    ? "Scan bays, track shots, and match with peers — all from your phone."
+                    : "Available on iOS & Android. Scan, track, and improve on the go."}
+                </p>
+
+                <div className="flex items-center gap-2 mt-3">
+                  {storeUrl ? (
+                    <a
+                      href={storeUrl}
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-white bg-gradient-to-r from-accent to-orange-500 px-4 py-2 rounded-full hover:shadow-md hover:shadow-accent/20 transition-all"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      {platform === "ios" ? "App Store" : "Google Play"}
+                    </a>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <a
+                        href="https://apps.apple.com/app/crushers-golf/id0000000000"
+                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-white bg-foreground px-3.5 py-2 rounded-full hover:bg-foreground/90 transition-colors"
+                      >
+                        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+                        iOS
+                      </a>
+                      <a
+                        href="https://play.google.com/store/apps/details?id=golf.crushers.app"
+                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-white bg-foreground px-3.5 py-2 rounded-full hover:bg-foreground/90 transition-colors"
+                      >
+                        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M3 20.5v-17c0-.59.34-1.11.84-1.35L13.69 12l-9.85 9.85c-.5-.24-.84-.76-.84-1.35zm13.81-5.38L6.05 21.34l8.49-8.49 2.27 2.27zm.91-.91L19.59 12l-1.87-2.21-2.27 2.27 2.27 2.15zM6.05 2.66l10.76 6.22-2.27 2.27-8.49-8.49z"/></svg>
+                        Android
+                      </a>
+                    </div>
+                  )}
+                  <button
+                    onClick={dismiss}
+                    className="text-xs text-muted hover:text-foreground transition-colors ml-1"
+                  >
+                    Not now
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
 export default function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-background">
+      {/* App Install Prompt */}
+      <AppInstallBanner />
+
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-border">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
