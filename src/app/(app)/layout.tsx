@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
+  CalendarDays,
   BarChart3,
   Users,
   TrendingUp,
@@ -18,6 +19,7 @@ import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/schedule", label: "Schedule", icon: CalendarDays },
   { href: "/sessions", label: "Sessions", icon: BarChart3 },
   { href: "/matching", label: "Peer Match", icon: Users },
   { href: "/improve", label: "Improve", icon: TrendingUp },

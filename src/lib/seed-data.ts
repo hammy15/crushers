@@ -5,6 +5,7 @@ import type {
   ClubStats,
   StrokesGained,
   ImprovementPlan,
+  BayBooking,
 } from "@/types/trackman";
 
 // Realistic names
@@ -376,4 +377,68 @@ export function generateDemoData() {
   });
 
   return { users, sessions: allSessions, shots: allShots, clubStats: allClubStats, strokesGained: allStrokesGained, plans: allPlans };
+}
+
+export function generateDemoBookings(users: UserProfile[]): BayBooking[] {
+  const bookings: BayBooking[] = [];
+  const today = new Date();
+
+  // 14-day window: 7 days back, today, 6 days forward
+  for (let dayOffset = -7; dayOffset <= 6; dayOffset++) {
+    const date = new Date(today);
+    date.setDate(date.getDate() + dayOffset);
+    const dateStr = date.toISOString().split("T")[0];
+
+    const bookingCount = randInt(8, 14);
+    const usedSlots = new Set<string>();
+
+    for (let i = 0; i < bookingCount; i++) {
+      const bay = randInt(1, 3) as 1 | 2 | 3;
+      // Weight toward popular hours: 70% during 7am-9pm
+      const hour = seededRandom() < 0.7
+        ? randInt(7, 20)
+        : (seededRandom() < 0.5 ? randInt(0, 6) : randInt(21, 23));
+      const slotKey = `${bay}-${hour}`;
+      if (usedSlots.has(slotKey)) continue;
+      usedSlots.add(slotKey);
+
+      const user = pick(users.slice(1)); // pick from non-demo users
+      bookings.push({
+        id: generateId(),
+        bayNumber: bay,
+        date: dateStr,
+        hour,
+        userId: user.id,
+        userName: user.name,
+        bookedAt: date.toISOString(),
+      });
+    }
+  }
+
+  // Add demo user bookings for the next 3 days so they can see & cancel their own
+  const demoUser = users[0];
+  for (let d = 0; d < 3; d++) {
+    const date = new Date(today);
+    date.setDate(date.getDate() + d);
+    const dateStr = date.toISOString().split("T")[0];
+    const bay = ((d % 3) + 1) as 1 | 2 | 3;
+    const hour = 10 + d * 3; // 10am, 1pm, 4pm
+    const slotKey = `${dateStr}-${bay}-${hour}`;
+
+    // Only add if not already occupied
+    const occupied = bookings.some(b => b.date === dateStr && b.bayNumber === bay && b.hour === hour);
+    if (!occupied) {
+      bookings.push({
+        id: generateId(),
+        bayNumber: bay,
+        date: dateStr,
+        hour,
+        userId: demoUser.id,
+        userName: demoUser.name,
+        bookedAt: new Date().toISOString(),
+      });
+    }
+  }
+
+  return bookings;
 }

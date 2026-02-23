@@ -124,3 +124,13 @@ export interface ClubStats {
 }
 
 export type PricingTier = "free" | "crusher" | "pro" | "facility";
+
+export interface BayBooking {
+  id: string;
+  bayNumber: 1 | 2 | 3;
+  date: string;       // "YYYY-MM-DD"
+  hour: number;       // 0-23
+  userId: string;
+  userName: string;
+  bookedAt: string;   // ISO timestamp
+}

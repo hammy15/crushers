@@ -1,7 +1,7 @@
 "use client";
 
-import { createContext, useContext, useMemo, type ReactNode } from "react";
-import { generateDemoData } from "./seed-data";
+import { createContext, useContext, useMemo, useState, useCallback, type ReactNode } from "react";
+import { generateDemoData, generateDemoBookings } from "./seed-data";
 import { findPeerMatches } from "./matching";
 import type {
   UserProfile,
@@ -11,6 +11,7 @@ import type {
   StrokesGained,
   ImprovementPlan,
   PeerMatch,
+  BayBooking,
 } from "@/types/trackman";
 
 interface DemoData {
@@ -24,12 +25,15 @@ interface DemoData {
   peerMatches: PeerMatch[];
   userSessions: Session[];
   userShots: TrackManShot[];
+  bookings: BayBooking[];
+  bookSlot: (bayNumber: 1 | 2 | 3, date: string, hour: number) => void;
+  cancelBooking: (bookingId: string) => void;
 }
 
 const DemoContext = createContext<DemoData | null>(null);
 
 export function DemoProvider({ children }: { children: ReactNode }) {
-  const data = useMemo(() => {
+  const staticData = useMemo(() => {
     const raw = generateDemoData();
     const currentUser = raw.users[0];
     const userSessions = raw.sessions.filter((s) => s.userId === currentUser.id);
@@ -40,6 +44,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
     const sgEntry = raw.strokesGained.find((s) => s.userId === currentUser.id);
     const planEntry = raw.plans.find((p) => p.userId === currentUser.id);
     const peerMatches = findPeerMatches(currentUser, raw.users, 12);
+    const initialBookings = generateDemoBookings(raw.users);
 
     return {
       currentUser,
@@ -52,10 +57,37 @@ export function DemoProvider({ children }: { children: ReactNode }) {
       peerMatches,
       userSessions,
       userShots,
+      initialBookings,
     };
   }, []);
 
-  return <DemoContext.Provider value={data}>{children}</DemoContext.Provider>;
+  const [bookings, setBookings] = useState<BayBooking[]>(staticData.initialBookings);
+
+  const bookSlot = useCallback((bayNumber: 1 | 2 | 3, date: string, hour: number) => {
+    const newBooking: BayBooking = {
+      id: crypto.randomUUID(),
+      bayNumber,
+      date,
+      hour,
+      userId: staticData.currentUser.id,
+      userName: staticData.currentUser.name,
+      bookedAt: new Date().toISOString(),
+    };
+    setBookings(prev => [...prev, newBooking]);
+  }, [staticData.currentUser]);
+
+  const cancelBooking = useCallback((bookingId: string) => {
+    setBookings(prev => prev.filter(b => b.id !== bookingId));
+  }, []);
+
+  const value = useMemo(() => ({
+    ...staticData,
+    bookings,
+    bookSlot,
+    cancelBooking,
+  }), [staticData, bookings, bookSlot, cancelBooking]);
+
+  return <DemoContext.Provider value={value}>{children}</DemoContext.Provider>;
 }
 
 export function useDemo(): DemoData {
